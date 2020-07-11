@@ -1,4 +1,5 @@
 const express = require("express");
+const { check } = require("express-validator");
 
 const videosControllers = require("../controllers/videos-controllers");
 
@@ -8,9 +9,17 @@ router.get("/:vid", videosControllers.getVideoById);
 
 router.get("/party/:pid", videosControllers.getVideosByPartyId);
 
-router.post("/", videosControllers.createVideo);
+router.post(
+  "/",
+  [check("url").not().isEmpty(), check("thumbnail").not().isEmpty()],
+  videosControllers.createVideo
+);
 
-router.patch("/:vid", videosControllers.updateVideo);
+router.patch(
+  "/:vid",
+  [check("url").not().isEmpty(), check("thumbnail").not().isEmpty()],
+  videosControllers.updateVideo
+);
 
 router.delete("/:vid", videosControllers.deleteVideo);
 
