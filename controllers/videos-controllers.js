@@ -2,6 +2,7 @@ const { v4: uuid } = require("uuid");
 const { validationResult } = require("express-validator");
 
 const HttpError = require("../models/http-error");
+const Video = require("../models/video");
 
 let DUMMY_VIDEO = [
   {
@@ -20,24 +21,37 @@ let DUMMY_VIDEO = [
   },
 ];
 
-const getVideoById = (req, res, next) => {
+const getVideoById = async (req, res, next) => {
   const videoId = req.params.vid;
-  const video = DUMMY_VIDEO.find((v) => {
-    return v.id === videoId;
-  });
-
-  if (!video) {
-    throw new HttpError("Could not find a video for the provided id.", 404);
+  let video;
+  try {
+    video = await Video.findById(videoId); // add .exec() to make it a promise
+  } catch (err) {
+    const error = new HttpError("Failed to fetch video, try again", 500);
+    return next(error);
   }
 
-  res.json({ video });
+  if (!video) {
+    const error = new HttpError(
+      "Could not find a video for the provided id.",
+      404
+    );
+    return next(error);
+  }
+
+  res.json({ video: video.toObject({ getters: true }) });
 };
 
-const getVideosByPartyId = (req, res, next) => {
+const getVideosByPartyId = async (req, res, next) => {
   const partyId = req.params.pid;
-  const videos = DUMMY_VIDEO.filter((v) => {
-    return v.partyId === partyId;
-  });
+
+  let videos;
+  try {
+    videos = await Video.find({ partyId });
+  } catch {
+    const error = new HttpError("Failed to fetch video, try again", 500);
+    return next(error);
+  }
 
   if (!videos || videos.length === 0) {
     return next(
@@ -48,25 +62,30 @@ const getVideosByPartyId = (req, res, next) => {
   res.json({ videos });
 };
 
-const createVideo = (req, res, next) => {
+const createVideo = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     throw new HttpError("Invalid inputs passed, please check your data.", 422);
   }
   const { thumbnail, url, partyId } = req.body;
-  const createdVideo = {
-    id: uuid(),
+  const createdVideo = new Video({
     thumbnail,
     url,
     partyId,
-  };
+  });
+  try {
+    await createdVideo.save();
+  } catch (err) {
+    const error = new HttpError("Failed to create video, try again", 500);
+    return next(error);
+  }
 
   DUMMY_VIDEO.push(createdVideo);
 
   res.status(201).json({ video: createdVideo });
 };
 
-const updateVideo = (req, res, next) => {
+const updateVideo = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     throw new HttpError("Invalid inputs passed, please check your data.", 422);
@@ -75,21 +94,44 @@ const updateVideo = (req, res, next) => {
   const { thumbnail, url } = req.body;
   const videoId = req.params.vid;
 
-  const updatedVideo = { ...DUMMY_VIDEO.find((v) => v.id === videoId) };
-  const videoIndex = DUMMY_VIDEO.findIndex((v) => v.id === videoId);
-  updatedVideo.thumbnail = thumbnail;
-  updatedVideo.url = url;
+  let video;
 
-  DUMMY_VIDEO[videoIndex] = updatedVideo;
-  res.status(200).json({ video: updatedVideo });
+  try {
+    video = await Video.findById(videoId);
+  } catch (err) {
+    const error = new HttpError("Failed to update video, try again", 500);
+    return next(error);
+  }
+
+  video.thumbnail = thumbnail;
+  video.url = url;
+
+  try {
+    await video.save();
+  } catch (err) {
+    const error = new HttpError("Failed to update video, try again", 500);
+    return next(error);
+  }
+  res.status(200).json({ video: video.toObject({ getters: true }) });
 };
 
-const deleteVideo = (req, res, next) => {
+const deleteVideo = async (req, res, next) => {
   const videoId = req.params.vid;
-  if (!DUMMY_VIDEO.find((v) => v.id === videoId)) {
-    throw new HttpError("Could not find a video for that id.", 404);
+
+  let video;
+  try {
+    video = await Video.findById(videoId);
+  } catch (err) {
+    const error = new HttpError("Failed to delete video, try again", 500);
+    return next(error);
   }
-  DUMMY_VIDEO = DUMMY_VIDEO.filter((v) => v.id !== videoId);
+
+  try {
+    await video.remove();
+  } catch (err) {
+    const error = new HttpError("Failed to delete video, try again", 500);
+    return next(error);
+  }
   res.status(200).json({ message: "Video deleted." });
 };
 

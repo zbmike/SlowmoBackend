@@ -1,8 +1,11 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
 
 const videosRoutes = require("./routes/videos-routes");
 const HttpError = require("./models/http-error");
+
+const cred = require("./secret");
 
 const app = express();
 
@@ -24,4 +27,16 @@ app.use((error, req, res, next) => {
   res.json({ message: error.message || "An unknown error occurred!" });
 });
 
-app.listen(5000);
+mongoose.set("useNewUrlParser", true);
+mongoose.set("useFindAndModify", false);
+mongoose.set("useCreateIndex", true);
+mongoose.set("useUnifiedTopology", true);
+
+mongoose
+  .connect(
+    `mongodb+srv://${cred.mongodbcred}@slowmovideo.qcnzp.mongodb.net/videos?retryWrites=true&w=majority`
+  )
+  .then(() => {
+    app.listen(5000);
+  })
+  .catch();
