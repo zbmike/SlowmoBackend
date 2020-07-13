@@ -1,8 +1,9 @@
-const { v4: uuid } = require("uuid");
+const mongoose = require("mongoose");
 const { validationResult } = require("express-validator");
 
 const HttpError = require("../models/http-error");
 const Video = require("../models/video");
+const Party = require("../models/party");
 
 let DUMMY_VIDEO = [
   {
@@ -45,21 +46,25 @@ const getVideoById = async (req, res, next) => {
 const getVideosByPartyId = async (req, res, next) => {
   const partyId = req.params.pid;
 
-  let videos;
+  let partyWithVideos;
   try {
-    videos = await Video.find({ partyId });
+    partyWithVideos = await Party.findById(partyId).populate("videos");
   } catch {
     const error = new HttpError("Failed to fetch video, try again", 500);
     return next(error);
   }
 
-  if (!videos || videos.length === 0) {
+  if (!partyWithVideos || partyWithVideos.videos.length === 0) {
     return next(
       new HttpError("Could not find videos for the provided party id.", 404)
     );
   }
 
-  res.json({ videos });
+  res.json({
+    videos: partyWithVideos.videos.map((video) =>
+      video.toObject({ getters: true })
+    ),
+  });
 };
 
 const createVideo = async (req, res, next) => {
@@ -73,14 +78,34 @@ const createVideo = async (req, res, next) => {
     url,
     partyId,
   });
+  console.log(createdVideo);
+
+  let party;
   try {
-    await createdVideo.save();
+    party = await Party.findById(partyId);
   } catch (err) {
-    const error = new HttpError("Failed to create video, try again", 500);
+    const error = new HttpError("Failed to create video, try again 1", 500);
+    return next(error);
+  }
+  if (!party) {
+    const error = new HttpError("Could not find party for provided id", 404);
     return next(error);
   }
 
-  DUMMY_VIDEO.push(createdVideo);
+  console.log(party);
+
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await createdVideo.save({ session: sess });
+    party.videos.push(createdVideo);
+    await party.save({ session: sess });
+    await sess.commitTransaction();
+  } catch (err) {
+    console.log(err);
+    const error = new HttpError("Failed to create video, try again 2", 500);
+    return next(error);
+  }
 
   res.status(201).json({ video: createdVideo });
 };
@@ -95,7 +120,6 @@ const updateVideo = async (req, res, next) => {
   const videoId = req.params.vid;
 
   let video;
-
   try {
     video = await Video.findById(videoId);
   } catch (err) {
@@ -120,14 +144,24 @@ const deleteVideo = async (req, res, next) => {
 
   let video;
   try {
-    video = await Video.findById(videoId);
+    video = await (await Video.findById(videoId)).populated("partyId");
   } catch (err) {
     const error = new HttpError("Failed to delete video, try again", 500);
     return next(error);
   }
 
+  if (!video) {
+    const error = new HttpError("Could not find video for this id.", 404);
+    return next(error);
+  }
+
   try {
-    await video.remove();
+    const sess = await mongoose.startSession();
+    sess.startSession();
+    await video.remove({ session: sess });
+    video.partyId.videos.pull(video);
+    await video.partyId.save({ session: sess });
+    await sess.commitTransaction();
   } catch (err) {
     const error = new HttpError("Failed to delete video, try again", 500);
     return next(error);

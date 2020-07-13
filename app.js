@@ -3,14 +3,16 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 
 const videosRoutes = require("./routes/videos-routes");
+const partiesRoutes = require("./routes/parties-routes");
 const HttpError = require("./models/http-error");
 
 const cred = require("./secret");
 
 const app = express();
 
-app.use(bodyParser.json()); // middleware
+app.use(bodyParser.json()); // middlewares
 
+app.use("/api/parties", partiesRoutes);
 app.use("/api/videos", videosRoutes);
 
 app.use((req, res, next) => {
