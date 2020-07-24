@@ -1,18 +1,7 @@
-const { v4: uuid } = require("uuid");
 const { validationResult } = require("express-validator");
 
 const HttpError = require("../models/http-error");
 const Party = require("../models/party");
-
-const DUMMY_PARTIES = [
-  {
-    id: "p1",
-    name: "Andy&Mai's Wedding",
-    image:
-      "https://images.ctfassets.net/77l22z9el0aa/68X8glzRII6myuoYsI6E0S/02ceb485340fcf2ea2227e99b164be21/3963534.jpg?fm=jpg&fl=progressive&q=75&w=2000",
-    videos: 3,
-  },
-];
 
 const getParties = async (req, res, next) => {
   let parties;
