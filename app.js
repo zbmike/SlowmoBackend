@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 
 const videosRoutes = require("./routes/videos-routes");
 const partiesRoutes = require("./routes/parties-routes");
+const usersRoutes = require("./routes/users-routes");
 const HttpError = require("./models/http-error");
 
 const cred = require("./secret");
@@ -24,6 +25,7 @@ app.use((req, res, next) => {
 
 app.use("/api/parties", partiesRoutes);
 app.use("/api/videos", videosRoutes);
+app.use("/api/users", usersRoutes);
 
 app.use((req, res, next) => {
   const error = new HttpError("Could not find this route", 404);
