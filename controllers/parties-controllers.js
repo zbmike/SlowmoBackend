@@ -5,19 +5,46 @@ const HttpError = require("../models/http-error");
 const Party = require("../models/party");
 const User = require("../models/user");
 
-const getParties = async (req, res, next) => {
-  let parties;
+// const getParties = async (req, res, next) => {
+//   let parties;
+//   try {
+//     parties = await Party.find({});
+//   } catch (err) {
+//     const error = new HttpError(
+//       "Failed to fetch parties, please try again.",
+//       500
+//     );
+//     return next(error);
+//   }
+//   res.json({
+//     parties: parties.map((party) => party.toObject({ getters: true })),
+//   });
+// };
+
+const getPartiesByUserId = async (req, res, next) => {
+  const userId = req.params.uid;
+
+  let userWithParties;
   try {
-    parties = await Party.find({});
+    userWithParties = await User.findById(userId).populate("parties");
   } catch (err) {
     const error = new HttpError(
-      "Failed to fetch parties, please try again.",
+      "Fetching parties failed, please try again later.",
       500
     );
     return next(error);
   }
+
+  if (!userWithParties || userWithParties.parties.length === 0) {
+    return next(
+      new HttpError("Could not find parties for the provided user id.", 404)
+    );
+  }
+
   res.json({
-    parties: parties.map((party) => party.toObject({ getters: true })),
+    parties: userWithParties.parties.map((party) =>
+      party.toObject({ getters: true })
+    ),
   });
 };
 
@@ -71,4 +98,5 @@ const createParty = async (req, res, next) => {
 };
 
 exports.getParties = getParties;
+exports.getPartiesByUserId = getPartiesByUserId;
 exports.createParty = createParty;

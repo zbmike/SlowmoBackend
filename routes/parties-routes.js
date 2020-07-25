@@ -11,6 +11,8 @@ router.get("/", partiesController.getParties);
 
 router.use(checkAuth);
 
+router.get("/user/:uid", partiesController.getPartiesByUserId);
+
 router.post(
   "/",
   fileUpload.single("image"),
