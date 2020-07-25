@@ -43,4 +43,4 @@
 ehthumbs.db
 Thumbs.db
 
-secret.js
+.env

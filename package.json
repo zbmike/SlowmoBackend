@@ -10,13 +10,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "aws-sdk": "^2.720.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
+    "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-validator": "^6.6.0",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.9.23",
     "mongoose-unique-validator": "^2.0.3",
+    "multer": "^1.4.2",
+    "multer-s3": "^2.9.0",
     "uuid": "^8.2.0"
   },
   "devDependencies": {

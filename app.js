@@ -1,17 +1,21 @@
+const fs = require("fs");
+const path = require("path");
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+require("dotenv").config();
 
 const videosRoutes = require("./routes/videos-routes");
 const partiesRoutes = require("./routes/parties-routes");
 const usersRoutes = require("./routes/users-routes");
 const HttpError = require("./models/http-error");
 
-const cred = require("./secret");
-
 const app = express();
 
 app.use(bodyParser.json()); // middlewares
+
+app.use("/uploads/images", express.static(path.join("uploads", "images")));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -33,10 +37,14 @@ app.use((req, res, next) => {
 });
 
 app.use((error, req, res, next) => {
-  if (res.headersSent) {
+  if (req.file) {
+    fs.unlink(req.file.path, (err) => {
+      console.log(err);
+    });
+  }
+  if (res.headerSent) {
     return next(error);
   }
-
   res.status(error.code || 500);
   res.json({ message: error.message || "An unknown error occurred!" });
 });
@@ -47,9 +55,7 @@ mongoose.set("useCreateIndex", true);
 mongoose.set("useUnifiedTopology", true);
 
 mongoose
-  .connect(
-    `mongodb+srv://${cred.mongodbcred}@slowmovideo.qcnzp.mongodb.net/videos?retryWrites=true&w=majority`
-  )
+  .connect(process.env.MONGODBCRED)
   .then(() => {
     app.listen(5000);
   })
