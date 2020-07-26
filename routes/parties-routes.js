@@ -7,7 +7,7 @@ const checkAuth = require("../middleware/check-auth");
 
 const router = express.Router();
 
-router.get("/", (req, res, next) => res.status(200));
+router.get("/", partiesController.getParties);
 
 router.use(checkAuth);
 
