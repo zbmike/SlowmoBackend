@@ -35,7 +35,7 @@ const getPartiesByUserId = async (req, res, next) => {
     return next(error);
   }
 
-  if (!userWithParties || userWithParties.parties.length === 0) {
+  if (!userWithParties) {
     return next(
       new HttpError("Could not find parties for the provided user id.", 404)
     );
@@ -97,6 +97,6 @@ const createParty = async (req, res, next) => {
   res.status(201).json({ party: createdParty });
 };
 
-exports.getParties = getParties;
+// exports.getParties = getParties;
 exports.getPartiesByUserId = getPartiesByUserId;
 exports.createParty = createParty;
